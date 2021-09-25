@@ -1419,7 +1419,7 @@ if __name__ == "__main__":
                 b = star
                 b.makeFlares()
             
-            #bpy.ops.wm.save_as_mainfile(filepath="/Users/shreyamakkar/Downloads/starrender.blend")
+            bpy.ops.wm.save_as_mainfile(filepath="./starrender.blend")
 
             start_frame = 1
             bpy.context.scene.frame_start = start_frame
