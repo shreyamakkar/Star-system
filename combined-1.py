@@ -1322,7 +1322,7 @@ class Star():
         return redgiant
 
 
-if __name__ == "__main__":
+'''if __name__ == "__main__":
 
     argv = sys.argv
 
@@ -1342,16 +1342,16 @@ if __name__ == "__main__":
 
         
         
-        if args.renderAnim:
-            #clean_slate()
+        if args.renderAnim:'''
+clean_slate()
             #inputFromUser = [float(item) for item in input("Enter the parameters for the required star in the following order: 1. Mass (in solar mass units) 2. Radius (in solar radius units) 3. Time(in billion years) ")]
-            star = Star(2, 2, 5)
+star = Star(2, 2, 5)
             #cam = star
             #cam.makeCamera()
 
+properties_list = star.props()
 
-
-            if star.t > star.props[1,4] and star.M < 5*const.M_sun:
+if star.t > properties_list[4] and star.M < 5*const.M_sun:
                 #make camera
                 makeCamera()
                 #make red giant
@@ -1363,7 +1363,7 @@ if __name__ == "__main__":
                 flare_object = star
                 flare_object.makeFlares()
             
-            elif star.t > star.props[1,4] and star.M > 5*const.M_sun:
+elif star.t > properties_list[4] and star.M > 5*const.M_sun:
                 #make camera
                 makeCamera()
                 #blue giant
@@ -1377,7 +1377,7 @@ if __name__ == "__main__":
             
             
         
-            elif star.t == 0:
+elif star.t == 0:
                 #make camera
                 makeCamera()
                 #proto star
@@ -1390,7 +1390,7 @@ if __name__ == "__main__":
                 flare_object.makeFlares()
             
 
-            elif star.t > 1.1*star.props[1,4]:
+elif star.t > 1.1*properties_list[4]:
                 #make camera
                 makeCamera()
                 #white dwarf
@@ -1404,7 +1404,7 @@ if __name__ == "__main__":
             
 
 
-            elif star.t < star.props[1,4]:
+elif star.t < properties_list[4]:
                 #make camera
                 makeCamera()
                 #main sequence star
@@ -1417,20 +1417,20 @@ if __name__ == "__main__":
                 flare_object.makeFlares()
             
             
-            bpy.ops.wm.save_as_mainfile(filepath="/Users/shreyamakkar/Downloads/starrender.blend")
+bpy.ops.wm.save_as_mainfile(filepath="/Users/shreyamakkar/Downloads/starrender.blend")
             #bpy.ops.wm.save_mainfile()
-            start_frame = 1
-            bpy.context.scene.frame_start = start_frame
-            end_frame = 20
-            bpy.context.scene.frame_end = end_frame
-            bpy.context.scene.render.fps = 24
-            bpy.context.scene.render.engine = 'CYCLES'
+start_frame = 1
+bpy.context.scene.frame_start = start_frame
+end_frame = 20
+bpy.context.scene.frame_end = end_frame
+bpy.context.scene.render.fps = 24
+bpy.context.scene.render.engine = 'CYCLES'
 
             #bpy.context.scene.render.filepath = os.path.join(dir, 'Star')
 
-            bpy.context.scene.render.image_settings.file_format = "FFMPEG"
-            bpy.context.scene.cycles.samples = 16
+bpy.context.scene.render.image_settings.file_format = "FFMPEG"
+bpy.context.scene.cycles.samples = 16
 
-            bpy.context.scene.render.filepath = os.path.join(__file__, 'StarRender')
+bpy.context.scene.render.filepath = os.path.join(__file__, 'StarRender')
             #bpy.ops.text.run_script()
-            bpy.ops.render.render(animation=True, write_still=1)
+bpy.ops.render.render(animation=True, write_still=1)
