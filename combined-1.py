@@ -67,8 +67,8 @@ def clean_slate():
 
 def makeCamera():
     bpy.ops.object.camera_add(location=(2.05124, -13.422 , 5.12868), rotation=(1.18551, 0.0136774, 0.20672), scale=(1, 1, 1))
-    camera = bpy.data.objects["Camera.001"]
-    bpy.context.scene.camera = bpy.data.objects["Camera.001"]
+    camera = bpy.data.objects["Camera"]
+    bpy.context.scene.camera = bpy.data.objects["Camera"]
     print(camera.location)
     return camera
 
