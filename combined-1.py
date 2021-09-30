@@ -65,11 +65,24 @@ def clean_slate():
         #add making env strength 0
         bpy.data.materials.remove(m)
 
+#def makeCamera():
+    #bpy.ops.object.camera_add(location=(2.05124, -13.422 , 5.12868), rotation=(1.18551, 0.0136774, 0.20672), scale=(1, 1, 1))
+    #camera = bpy.data.objects["Camera"]
+    #bpy.context.scene.camera = bpy.data.objects["Camera"]
+    #print(camera.location)
+    #return camera
+
 def makeCamera():
-    bpy.ops.object.camera_add(location=(2.05124, -13.422 , 5.12868), rotation=(1.18551, 0.0136774, 0.20672), scale=(1, 1, 1))
-    camera = bpy.data.objects["Camera"]
+    camera_data = bpy.data.cameras.new(name='Camera')
+    camera = bpy.data.objects.new('Camera', camera_data)
+    bpy.context.scene.collection.objects.link(camera)
+    camera.location = (2.05124, -13.422 , 5.12868)
+    camera.rotation_euler[0] = 1.18551
+    camera.rotation_euler[1] = 0.0136774
+    camera.rotation_euler[2] = 0.20672
     bpy.context.scene.camera = bpy.data.objects["Camera"]
     print(camera.location)
+    bpy.data.worlds["World"].node_tree.nodes["Background"].inputs[1].default_value = 0
     return camera
 
 
@@ -88,17 +101,17 @@ class Star():
 
         if self.M<2*u.Msun:
             L = (L0*pow((self.M/(1*u.Msun)),a[1])).to(u.Lsun)
-            return L
         else:
             L = (1.4*L0*pow((self.M/(1*u.Msun)),a[0])).to(u.L_sun)
-            T = 0.9*T0*pow((self.M/(1*u.Msun)),0.625)
-            R = rf*(R0*pow((self.M/(1*u.Msun)), eta[self.idx])).to(u.Rsun)
-            peak_wavelength = (b/T).to(u.nm)
-            lifetime = 10 *pow(self.M,-2.5)
+        T = 0.9*T0*pow((self.M/(1*u.Msun)),0.625)
+        R = rf*(R0*pow((self.M/(1*u.Msun)), eta[self.idx])).to(u.Rsun)
+        self.Rad = R
+        peak_wavelength = (b/T).to(u.nm)
+        lifetime = 10*pow(self.M/(1*u.M_sun),-2.5)
 
-            return [L, T, R, peak_wavelength, lifetime]
+        return [L, T, R, peak_wavelength, lifetime]
 #The first list of values returned contains units and is an astropy Quantity object, while the second list contains just values
-#Although radius has been calculated in the props function, it may not work well for all stars
+#Although radius has been calculated in the  function, it may not work well for all stars
 
 
 
@@ -107,12 +120,16 @@ class Star():
         T=coeff_list[1]
         c1=-2.77873204e-09
         c2=-6.40472261e-05
-        a1= pow(2.7, c1*T*T+c2*T)
+        a1= pow(2.7, c1*T.value*T.value+c2*T.value)
         return a1
         
     def makeLimbDarkening(self):
-        bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=(0.9, 0.9, 0.9))
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='WORLD', location=(0, 0, 0))#, scale=(0.9, 0.9, 0.9))
         limb = bpy.context.active_object
+        limb.scale[0] = 0.9
+        limb.scale[1] = 0.9
+        limb.scale[2] = 0.9
+        
         limb_mat = bpy.data.materials.new(name = "limb_darkening")
         limb.data.materials.append(limb_mat)
         #accessing nodes in material tab
@@ -325,13 +342,14 @@ class Star():
         FlareAmount=0.5 #controls the number of flares that can be seen on surface
         flareDensity= 500 # controls how dense/thick the flares look, inversely prop to mass
         StreakColor=[1,0.089493,0,1] #color of flares
-        StreakEmmissionStrength= 500/self.M*SCALE_FAC_MASS #strength of flares, inversely prop to mass
+        StreakEmmissionStrength= 500/self.M.value*SCALE_FAC_MASS #strength of flares, inversely prop to mass
 
 
 
 
         #object for streaks
-        bpy.ops.mesh.primitive_plane_add(enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+        bpy.ops.mesh.primitive_plane_add(enter_editmode=False, align='WORLD', location=(0, 0, 0))#, scale=(1, 1, 1))
+        
         streak=bpy.context.active_object
         streak.scale=[.07,3.16,1]
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
@@ -422,7 +440,7 @@ class Star():
         #end material for streaks
 
         #start modifiers on streak
-        bpy.ops.curve.primitive_bezier_circle_add(radius=1, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+        bpy.ops.curve.primitive_bezier_circle_add(radius=1, enter_editmode=False, align='WORLD', location=(0, 0, 0))
         curve=bpy.context.active_object
 
         sub=streak.modifiers.new('subdiv','SUBSURF')
@@ -445,7 +463,7 @@ class Star():
         #end modifiers on streaks
 
         #flare object
-        bpy.ops.mesh.primitive_circle_add(radius=0.115, fill_type='NGON', enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+        bpy.ops.mesh.primitive_circle_add(radius=0.115, fill_type='NGON', enter_editmode=False, align='WORLD', location=(0, 0, 0))
         flare=bpy.context.active_object
 
         #start geonodes for flares
@@ -486,8 +504,13 @@ class Star():
         #end geo nodes for flares
 
         #star object(wont be visible) needs to be almost same size as star
-        bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=(PhStarScale, PhStarScale, PhStarScale))
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='WORLD', location=(0, 0, 0))#, scale=(PhStarScale, PhStarScale, PhStarScale))
         star=bpy.context.active_object
+        #bpy.ops.transform.resize(value=(PhStarScale, PhStarScale, PhStarScale)
+        star.scale[0] = PhStarScale
+        star.scale[1] = PhStarScale
+        star.scale[2] = PhStarScale
+        
 
         #start geonodes for star
         geostar=star.modifiers.new('geostar','NODES')
@@ -745,7 +768,7 @@ class Star():
 
         bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='WORLD', location=(0, 0, 0))
         #scaling to 10fm
-        bpy.ops.transform.resize(value=(10, 10, 10), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False)
+        #bpy.ops.transform.resize(value=(10, 10, 10), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False)
 
         #referencing sphere as earth
         bluegiant = bpy.context.active_object
@@ -1169,7 +1192,7 @@ class Star():
     def makeRedGiant(self):
         bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='WORLD', location=(0, 0, 0))
         #scaling to 10fm
-        bpy.ops.transform.resize(value=(10, 10, 10), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False)
+        #bpy.ops.transform.resize(value=(10, 10, 10), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False)
 
         #referencing sphere as earth
         redgiant = bpy.context.active_object
@@ -1322,7 +1345,7 @@ class Star():
         return redgiant
 
 
-'''if __name__ == "__main__":
+if __name__ == "__main__":
 
     argv = sys.argv
 
@@ -1331,106 +1354,102 @@ class Star():
     else:
         argv = argv[argv.index("--") + 1:]
 
-        usage_text = (
-            "Run Blender to get an astrophysically accurate Star:"
-            "  blender --background --python " + __file__ + " -- [options]"
-        )
+    usage_text = (
+        "Run Blender to get an astrophysically accurate Star:"
+        "blender --background --python " + __file__ + " -- [options]"
+    )
 
-        parser = argparse.ArgumentParser(description=usage_text)
-        parser.add_argument("--render-anim", "-ra", action='store_true', default=False, help="Use this flag if you want to render the default animation in the background.", dest="renderAnim")
-        args = parser.parse_args(argv)
+    parser = argparse.ArgumentParser(description=usage_text)
+    parser.add_argument("--render-anim", "-ra", action='store_true', default=False, help="Use this flag if you want to render the default animation in the background.", dest="renderAnim")
+    args = parser.parse_args(argv)
 
         
         
-        if args.renderAnim:'''
-clean_slate()
-            #inputFromUser = [float(item) for item in input("Enter the parameters for the required star in the following order: 1. Mass (in solar mass units) 2. Radius (in solar radius units) 3. Time(in billion years) ")]
-star = Star(2, 2, 5)
-            #cam = star
-            #cam.makeCamera()
+    if args.renderAnim:
+        clean_slate()
+        #inputFromUser = [float(item) for item in input("Enter the parameters for the required star in the following order: 1. Mass (in solar mass units) 2. Radius (in solar radius units) 3. Time(in billion years) ")]
+        star = Star(2, 2, 5)
+        #cam = star
+        #cam.makeCamera()
 
-properties_list = star.props()
+        properties_list = star.props()
 
-if star.t > properties_list[4] and star.M < 5*const.M_sun:
-                #make camera
-                makeCamera()
-                #make red giant
-                a_star = star
-                a_star.makeRedGiant()
-                coeff = star
-                coeff_value = coeff.coefflin()
-                coeff.makeLimbDarkening()
-                flare_object = star
-                flare_object.makeFlares()
-            
-elif star.t > properties_list[4] and star.M > 5*const.M_sun:
-                #make camera
-                makeCamera()
-                #blue giant
-                a_star = star
-                a_star.makeBlueGiant()
-                coeff = star
-                coeff_value = coeff.coefflin()
-                coeff.makeLimbDarkening()
-                flare_object = star
-                flare_object.makeFlares()
-            
-            
-        
-elif star.t == 0:
-                #make camera
-                makeCamera()
-                #proto star
-                a_star = star
-                a_star.makeProtoStar()
-                coeff = star
-                coeff_value = coeff.coefflin()
-                coeff.makeLimbDarkening()
-                flare_object = star
-                flare_object.makeFlares()
-            
+        if (star.t > properties_list[4] and star.M.value < 5):
+                        #make camera
+                        makeCamera()
+                        #make red giant
+                        a_star = star
+                        a_star.makeRedGiant()
+                        coeff = star
+                        coeff_value = coeff.coefflin()
+                        coeff.makeLimbDarkening()
+                        #flare_object = star
+                        #flare_object.makeFlares()
+                    
+        elif (star.t > properties_list[4] and star.M.value > 5):
+                        #make camera
+                        makeCamera()
+                        #blue giant
+                        a_star = star
+                        a_star.makeBlueGiant()
+                        coeff = star
+                        coeff_value = coeff.coefflin()
+                        coeff.makeLimbDarkening()
+                        #flare_object = star
+                        #flare_object.makeFlares()
+                    
+                    
+                
+        elif star.t == 0:
+                        #make camera
+                        makeCamera()
+                        #proto star
+                        a_star = star
+                        a_star.makeProtoStar()
+                        coeff = star
+                        coeff_value = coeff.coefflin()
+                        coeff.makeLimbDarkening()
+                        #flare_object = star
+                        #flare_object.makeFlares()
+                    
 
-elif star.t > 1.1*properties_list[4]:
-                #make camera
-                makeCamera()
-                #white dwarf
-                a_star = star
-                a_star.makeWhiteDwarf()
-                coeff = star
-                coeff_value = coeff.coefflin()
-                coeff.makeLimbDarkening()
-                flare_object = star
-                flare_object.makeFlares()
-            
+        elif star.t > 1.1*properties_list[4]:
+                        #make camera
+                        makeCamera()
+                        #white dwarf
+                        a_star = star
+                        a_star.makeWhiteDwarf()
+                        coeff = star
+                        coeff_value = coeff.coefflin()
+                        coeff.makeLimbDarkening()
+                        #flare_object = star
+                        #flare_object.makeFlares()
+                    
 
 
-elif star.t < properties_list[4]:
-                #make camera
-                makeCamera()
-                #main sequence star
-                a_star = star
-                a_star.makeMainSequenceStar()
-                coeff = star
-                coeff_value = coeff.coefflin()
-                coeff.makeLimbDarkening()
-                flare_object = star
-                flare_object.makeFlares()
-            
-            
-bpy.ops.wm.save_as_mainfile(filepath="/Users/shreyamakkar/Downloads/starrender.blend")
-            #bpy.ops.wm.save_mainfile()
-start_frame = 1
-bpy.context.scene.frame_start = start_frame
-end_frame = 20
-bpy.context.scene.frame_end = end_frame
-bpy.context.scene.render.fps = 24
-bpy.context.scene.render.engine = 'CYCLES'
+        elif star.t < properties_list[4]:
+                        #make camera
+                        makeCamera()
+                        #main sequence star
+                        a_star = star
+                        a_star.makeMainSequenceStar()
+                        coeff = star
+                        coeff_value = coeff.coefflin()
+                        coeff.makeLimbDarkening()
+                        #flare_object = star
+                        #flare_object.makeFlares()
+                    
+                    
+        bpy.ops.wm.save_as_mainfile(filepath="/Users/shreyamakkar/Downloads/starrender.blend")
+                  
+        start_frame = 1
+        bpy.context.scene.frame_start = start_frame
+        end_frame = 250
+        bpy.context.scene.frame_end = end_frame
+        bpy.context.scene.render.fps = 24
+        bpy.context.scene.render.engine = 'CYCLES'
+        bpy.context.scene.render.image_settings.file_format = "FFMPEG"
+        bpy.context.scene.cycles.samples = 16
 
-            #bpy.context.scene.render.filepath = os.path.join(dir, 'Star')
-
-bpy.context.scene.render.image_settings.file_format = "FFMPEG"
-bpy.context.scene.cycles.samples = 16
-
-bpy.context.scene.render.filepath = os.path.join(__file__, 'StarRender')
-            #bpy.ops.text.run_script()
-bpy.ops.render.render(animation=True, write_still=1)
+        bpy.context.scene.render.filepath='/Users/shreyamakkar/Downloads/testrender.mkv'
+        bpy.ops.render.render(animation=True, write_still=1)
